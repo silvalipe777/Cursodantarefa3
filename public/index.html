@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Sugestões</title>
+</head>
+<body>
+
+<h1>Sugestões</h1>
+
+<ul id="lista"></ul>
+
+<button id="prev">Anterior</button>
+<button id="next">Próxima</button>
+
+<br><br>
+
+<form id="form">
+    <input type="text" id="campo" placeholder="Digite a sugestão" required>
+    <button type="submit">Enviar</button>
+</form>
+
+<p id="msg" style="color:green; display:none;"></p>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+
+let page = 1;
+const ul = document.getElementById("lista");
+const msg = document.getElementById("msg");
+
+function carregar(p) {
+    socket.emit("listar", p);
+}
+
+socket.on("lista", (data) => {
+    page = data.page;
+    ul.innerHTML = "";
+    data.itens.forEach(s => {
+        const li = document.createElement("li");
+        li.textContent = s.texto;
+        ul.appendChild(li);
+    });
+});
+
+socket.on("criada", (data) => {
+    msg.textContent = data.mensagem;
+    msg.style.display = "block";
+    setTimeout(() => msg.style.display = "none", 2000);
+});
+
+socket.on("erro", (txt) => alert(txt));
+
+document.getElementById("form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const texto = document.getElementById("campo").value.trim();
+    socket.emit("criar", texto);
+    document.getElementById("campo").value = "";
+});
+
+document.getElementById("prev").onclick = () => {
+    if (page > 1) socket.emit("mudarPagina", page - 1);
+};
+
+document.getElementById("next").onclick = () => {
+    socket.emit("mudarPagina", page + 1);
+};
+
+carregar(page);
+</script>
+
+</body>
+</html>
+
