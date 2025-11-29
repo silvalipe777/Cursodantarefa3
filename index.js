@@ -45,10 +45,6 @@ io.on("connection", (socket) => {
     socket.emit("lista", paginar(1));
   });
 
-  socket.on("mudarPagina", (pagina) => {
-    socket.emit("lista", paginar(pagina));
-  });
-
 });
 
 httpServer.listen(3000, () => {

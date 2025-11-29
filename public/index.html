@@ -26,22 +26,41 @@
 <script>
 const socket = io();
 
-let page = 1;
 const ul = document.getElementById("lista");
 const msg = document.getElementById("msg");
 
-function carregar(p) {
-    socket.emit("listar", p);
+let paginaAtual = 1;
+let totalPaginas = 1;
+
+function obterPaginaDaURL() {
+    const params = new URLSearchParams(window.location.search);
+    return parseInt(params.get('page') || '1', 10);
+}
+
+
+function atualizarURL(pagina) {
+    const url = new URL(window.location);
+    url.searchParams.set('page', pagina);
+    window.history.pushState({}, '', url);
+}
+
+function carregarSugestoes(pagina) {
+    socket.emit("listar", pagina);
 }
 
 socket.on("lista", (data) => {
-    page = data.page;
+    paginaAtual = data.page;
+    totalPaginas = data.totalPages;
+
     ul.innerHTML = "";
     data.itens.forEach(s => {
         const li = document.createElement("li");
         li.textContent = s.texto;
         ul.appendChild(li);
     });
+
+ 
+    atualizarURL(paginaAtual);
 });
 
 socket.on("criada", (data) => {
@@ -50,24 +69,29 @@ socket.on("criada", (data) => {
     setTimeout(() => msg.style.display = "none", 2000);
 });
 
-socket.on("erro", (txt) => alert(txt));
-
 document.getElementById("form").addEventListener("submit", (e) => {
     e.preventDefault();
     const texto = document.getElementById("campo").value.trim();
-    socket.emit("criar", texto);
-    document.getElementById("campo").value = "";
+    if (texto) {
+        socket.emit("criar", texto);
+        document.getElementById("campo").value = "";
+    }
 });
 
 document.getElementById("prev").onclick = () => {
-    if (page > 1) socket.emit("mudarPagina", page - 1);
+    if (paginaAtual > 1) {
+        carregarSugestoes(paginaAtual - 1);
+    }
 };
 
 document.getElementById("next").onclick = () => {
-    socket.emit("mudarPagina", page + 1);
+    if (paginaAtual < totalPaginas) {
+        carregarSugestoes(paginaAtual + 1);
+    }
 };
 
-carregar(page);
+const paginaInicial = obterPaginaDaURL();
+carregarSugestoes(paginaInicial);
 </script>
 
 </body>
