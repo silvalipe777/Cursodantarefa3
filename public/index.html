@@ -8,6 +8,8 @@
 
 <h1>Sugestões</h1>
 
+<p>Conexão: <span id="conexaoId">-</span> | Página: <span id="paginaInfo">-</span></p>
+
 <ul id="lista"></ul>
 
 <button id="prev">Anterior</button>
@@ -28,30 +30,17 @@ const socket = io();
 
 const ul = document.getElementById("lista");
 const msg = document.getElementById("msg");
-
-let paginaAtual = 1;
-let totalPaginas = 1;
-
-function obterPaginaDaURL() {
-    const params = new URLSearchParams(window.location.search);
-    return parseInt(params.get('page') || '1', 10);
-}
+const conexaoId = document.getElementById("conexaoId");
+const paginaInfo = document.getElementById("paginaInfo");
 
 
-function atualizarURL(pagina) {
-    const url = new URL(window.location);
-    url.searchParams.set('page', pagina);
-    window.history.pushState({}, '', url);
-}
+socket.on("estado", (data) => {
+    conexaoId.textContent = data.id;
+    paginaInfo.textContent = data.paginaAtual;
+});
 
-function carregarSugestoes(pagina) {
-    socket.emit("listar", pagina);
-}
 
 socket.on("lista", (data) => {
-    paginaAtual = data.page;
-    totalPaginas = data.totalPages;
-
     ul.innerHTML = "";
     data.itens.forEach(s => {
         const li = document.createElement("li");
@@ -59,15 +48,16 @@ socket.on("lista", (data) => {
         ul.appendChild(li);
     });
 
- 
-    atualizarURL(paginaAtual);
+    paginaInfo.textContent = data.page + " de " + data.totalPages;
 });
+
 
 socket.on("criada", (data) => {
     msg.textContent = data.mensagem;
     msg.style.display = "block";
     setTimeout(() => msg.style.display = "none", 2000);
 });
+
 
 document.getElementById("form").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -78,22 +68,15 @@ document.getElementById("form").addEventListener("submit", (e) => {
     }
 });
 
+
 document.getElementById("prev").onclick = () => {
-    if (paginaAtual > 1) {
-        carregarSugestoes(paginaAtual - 1);
-    }
+    socket.emit("mudarPagina", "anterior");
 };
 
 document.getElementById("next").onclick = () => {
-    if (paginaAtual < totalPaginas) {
-        carregarSugestoes(paginaAtual + 1);
-    }
+    socket.emit("mudarPagina", "proxima");
 };
-
-const paginaInicial = obterPaginaDaURL();
-carregarSugestoes(paginaInicial);
 </script>
 
 </body>
 </html>
-

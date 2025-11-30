@@ -1,40 +1,27 @@
 # Sugestões com WebSocket
 
-Projeto de sugestões em tempo real usando Socket.IO.
+Sistema de sugestões com estado guardado no servidor usando Express e Socket.IO.
 
 ## Como rodar
 
-1. Baixa as dependências: npm install
-2. Roda o servidor: node index.js
-3. Abre o navegador em: http://localhost:3000
+1. Instale as dependências: `npm install`
+2. Inicie o servidor: `node index.js`
+3. Acesse no navegador: http://localhost:3000
 
 ## O que acontece quando você usa o site
 
-### Quando você acessa a página e envia uma sugestão
+### Acessar a página e enviar uma sugestão
 
-**O que o navegador pede pro servidor:**
-- Faz um GET / pra pegar a página HTML com o formulário
+Quando você abre a página, o navegador faz um GET na rota "/" pra pegar o HTML.
 
-**O que o navegador manda via WebSocket:**
-Logo que abre a página: envia listar com o número da página pega da URL ou usa 1 por padrã. Quando você preenche e envia o formulário: envia criar com o texto da sugestão o formulário não recarrega a página porque tem um preventDefault() bloqueando
+Logo que a página carrega, o Socket.IO conecta automaticamente. O servidor cria um estado pra essa conexão com a página atual começando em 1, e já manda a lista de sugestões dessa página.
 
-**O que o servidor responde:**
-Depois do listar: manda de volta lista com {page, totalPages, itens}
-Depois do criar: manda criada com {mensagem, sugestao} e logo depois manda a lista atualizada da página 1
+Quando você preenche o campo e clica em enviar, o navegador manda o texto da sugestão pro servidor via WebSocket (evento "criar"). O servidor adiciona na lista, responde com uma mensagem de sucesso e atualiza a lista pra todos que estão conectados.
 
-### Quando você muda de página na lista
+### Mudar de página
 
-**O que o navegador pede pro servidor:**
-Já pediu o HTML antes quando acessou pela primeira vez
+Quando você clica em "Anterior" ou "Próxima", o navegador manda pro servidor só a direção que você quer ir (evento "mudarPagina" com "anterior" ou "proxima"), sem informar o número da página.
 
-**O que o navegador mada via WebSocket:**
-No primeiro acesso: listar com a página que tá na URL usa URLSearchParams pra pegar isso
-Quando você clica em "Anterior" ou "Próxima": listar com o número da página nova
+O servidor sabe em qual página você está porque guarda isso no estado da sua conexão. Ele atualiza a página e manda de volta a nova lista de sugestões.
 
-**O que o servidor responde:**
-Manda lista com{page, totalPages, itens} da página que você pediu
-
-**Detalhes importantes:**
-Toda vez que você muda de página, a URL atualiza automaticamente usando pushState fica tipo ?page=2
-O número da página vem da URL usando window.location.search e URLSearchParams
-Se não tiver nada na URL, assume página 1
+Não tem nenhum reload ou redirecionamento, tudo acontece via WebSocket.
